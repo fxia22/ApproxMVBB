@@ -9,6 +9,7 @@
 // ========================================================================================
 
 #include <iostream>
+#include <fstream>
 
 #include "ApproxMVBB/ComputeApproxMVBB.hpp"
 #define TINYOBJLOADER_IMPLEMENTATION
@@ -59,12 +60,15 @@ int load_obj(std::string fn,
 
 float get_volume(ApproxMVBB::OOBB oobb){ 
 
-
-
-
+  return (oobb.m_maxPoint(0) - oobb.m_minPoint(0)) * 
+         (oobb.m_maxPoint(1) - oobb.m_minPoint(1)) * 
+         (oobb.m_maxPoint(2) - oobb.m_minPoint(2));
 }
+
 int main(int argc, char** argv)
 {
+    char * input_filename = argv[1];
+    char * output_dir = argv[2];
 
     tinyobj::attrib_t attrib;
     std::vector<tinyobj::shape_t> shapes;
@@ -74,9 +78,9 @@ int main(int argc, char** argv)
     std::string err;
 
     std::string base_dir;
-    load_obj(std::string("test.obj"), attrib, shapes, materials, warn, err, base_dir);
-    unsigned int n_vert = (int)(attrib.vertices.size()) / 3;
+    load_obj(std::string(input_filename), attrib, shapes, materials, warn, err, base_dir);
 
+    unsigned int n_vert = (int)(attrib.vertices.size()) / 3;
     unsigned int nPoints = n_vert;
 
     std::cout << "Sample " << nPoints << " points in unite cube (coordinates are in world coordinate system `I` ) " << std::endl;
@@ -119,7 +123,7 @@ int main(int argc, char** argv)
 
     // To make the box have a minimum extent of greater 0.1:
     // see also oobb.expandToMinExtentRelative(...)
-    oobb.expandToMinExtentAbsolute(0.1);
+    //oobb.expandToMinExtentAbsolute(0.1);
 
     std::cout << "OOBB with all point included: " << std::endl
               << "---> lower point in OOBB coordinate system: " << oobb.m_minPoint.transpose() << std::endl
@@ -127,5 +131,15 @@ int main(int argc, char** argv)
 
     std::cout << "Volume" << std::endl
               << get_volume(oobb);
+
+
+    std::ofstream output_file;
+    output_file.open (std::string(output_dir) + std::string("/mvbb_out.txt"));
+    output_file << oobb.m_q_KI.matrix() << std::endl;
+    output_file << oobb.m_minPoint.transpose() << std::endl;
+    output_file << oobb.m_maxPoint.transpose() << std::endl;
+    output_file << get_volume(oobb) << std::endl;
+    output_file.close();
+
     return 0;
 }
